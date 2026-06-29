@@ -28,6 +28,7 @@ struct SidebarView: View {
     @Binding var selection: SidebarNavigation
     @ObservedObject var dataStore: DataStore
     var onSettings: (() -> Void)?
+    private let keychain = KeychainService()
 
     // pony-tail: counts computed inline; could be cached if data grows large
     private func count(for nav: SidebarNavigation) -> Int {
@@ -40,8 +41,13 @@ struct SidebarView: View {
             return dataStore.appData.papers.filter { $0.status == .accepted || $0.status == .published }.count
         case .reviews: return dataStore.appData.reviews.count
         case .sessions: return dataStore.appData.sessions.count
-        case .today: return 0 // ponytail: today filter implemented in Phase 2
+        case .today: return dataStore.appData.papers.filter(isTodayPaper).count
         }
+    }
+
+    private var hasStoredAPIKey: Bool {
+        guard let key = try? keychain.loadAPIKey() else { return false }
+        return !key.isEmpty
     }
 
     var body: some View {
@@ -74,15 +80,19 @@ struct SidebarView: View {
 
             // Bottom status
             SidebarStatus(
-                lastSavedAt: nil,
-                hasActiveTimer: false,
-                aiConnected: false,
+                lastSavedAt: dataStore.appData.settings.lastSavedAt,
+                hasActiveTimer: dataStore.appData.papers.contains(where: \.isRunning),
+                aiConnected: hasStoredAPIKey,
                 onSettings: onSettings
             )
         }
         .background(AppColors.sidebarBg)
         .frame(minWidth: 200, idealWidth: 220)
     }
+}
+
+private func isTodayPaper(_ paper: Paper) -> Bool {
+    paper.isRunning || paper.deadline.map { Calendar.current.isDateInToday($0) } == true
 }
 
 // MARK: - Sidebar Row
@@ -139,9 +149,19 @@ private struct SidebarStatus: View {
                 Image(systemName: "circle.fill")
                     .font(.system(size: 5))
                     .foregroundColor(AppColors.success)
-                Text(lastSavedAt.map { _ in "Saved" } ?? "Ready")
+                Text(lastSavedAt.map { "Saved \(DateFormatting.displayFormatter.string(from: $0))" } ?? "Ready")
                     .font(AppTypography.metaLabel)
                     .foregroundColor(AppColors.textTertiary)
+            }
+            if hasActiveTimer {
+                HStack {
+                    Image(systemName: "circle.fill")
+                        .font(.system(size: 5))
+                        .foregroundColor(AppColors.accentPrimary)
+                    Text("Timer running")
+                        .font(AppTypography.metaLabel)
+                        .foregroundColor(AppColors.textTertiary)
+                }
             }
             HStack {
                 Image(systemName: "circle.fill")

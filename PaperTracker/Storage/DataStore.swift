@@ -51,9 +51,23 @@ final class DataStore: ObservableObject {
     // MARK: - Save
 
     func save() throws {
-        let raw = try encoder.encode(appData)
+        var dataToSave = appData
+        dataToSave.settings.lastSavedAt = Date()
+        let raw = try encoder.encode(dataToSave)
         try raw.write(to: dataURL, options: .atomic)
+        appData = dataToSave
         activeError = nil
+    }
+
+    @discardableResult
+    func saveOrReportError() -> Bool {
+        do {
+            try save()
+            return true
+        } catch {
+            activeError = .saveFailed(error.localizedDescription)
+            return false
+        }
     }
 
     // MARK: - Convenience data URL

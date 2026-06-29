@@ -72,6 +72,8 @@ tool-paper-tracker/
 ## 当前状态
 
 - 仓库结构已整理为 App 开发形态
-- 7 个 Phase 全部完成，27 个测试全通过
-- Papers / Reviews / Sessions / Settings / AI Assist 功能完整
+- 7 个 Phase 全部完成
+- 自动化测试覆盖核心数据、迁移、CSV、计时、AI 解析和启动路径
+- Papers / Reviews / Sessions / Settings / AI Assist 已具备 v1 主流程
+- 仍需手动 QA 验证真实 App 操作流程，特别是导入导出、备份恢复、计时和 AI 请求
 - 网页原型已归档至 `prototypes/web/`，可作为旧数据导入样本

@@ -5,17 +5,11 @@ final class AIService {
     private let keychain = KeychainService()
 
     func extractPaperInfo(from rawText: String) async throws -> AISuggestion {
-        let apiKey = (try? keychain.loadAPIKey()) ?? nil
-        guard let key = apiKey, !key.isEmpty else {
-            throw AIError.noAPIKey
-        }
-
+        let key = try requireAPIKey()
         let baseURL = UserDefaults.standard.string(forKey: "aiBaseURL") ?? "https://api.openai.com/v1"
         let model = UserDefaults.standard.string(forKey: "aiModel") ?? "gpt-4o"
 
-        guard let url = URL(string: "\(baseURL)/chat/completions") else {
-            throw AIError.invalidURL
-        }
+        let url = try endpoint(baseURL: baseURL, path: "chat/completions")
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -45,6 +39,28 @@ final class AIService {
         }
 
         return try parseResponse(data)
+    }
+
+    func testConnection() async throws {
+        let key = try requireAPIKey()
+        let baseURL = UserDefaults.standard.string(forKey: "aiBaseURL") ?? "https://api.openai.com/v1"
+        let url = try endpoint(baseURL: baseURL, path: "models")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 15
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AIError.networkError("Invalid response type")
+        }
+
+        if http.statusCode == 429 { throw AIError.rateLimited }
+        guard (200..<300).contains(http.statusCode) else {
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw AIError.networkError("HTTP \(http.statusCode): \(body.prefix(200))")
+        }
     }
 
     // MARK: - Parse
@@ -81,5 +97,23 @@ final class AIService {
         } catch {
             throw AIError.invalidResponse
         }
+    }
+
+    private func requireAPIKey() throws -> String {
+        guard let key = try keychain.loadAPIKey(), !key.isEmpty else {
+            throw AIError.noAPIKey
+        }
+        return key
+    }
+
+    private func endpoint(baseURL: String, path: String) throws -> URL {
+        let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard let url = URL(string: "\(trimmed)/\(path)"),
+              url.scheme != nil,
+              url.host != nil else {
+            throw AIError.invalidURL
+        }
+        return url
     }
 }

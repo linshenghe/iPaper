@@ -10,9 +10,12 @@ struct SettingsView: View {
     @AppStorage("aiModel") private var aiModel = "gpt-4o"
     @State private var apiKeyInput = ""
     @State private var keySaved = false
+    @State private var keyError: String?
     @State private var connectionTestResult: String?
+    @State private var isTestingConnection = false
 
     private let keychain = KeychainService()
+    private let aiService = AIService()
 
     init(dataStore: DataStore) {
         self.dataStore = dataStore
@@ -127,11 +130,22 @@ struct SettingsView: View {
                         .textFieldStyle(.roundedBorder)
                         .font(AppTypography.bodyPrimary)
                     Button("Save") {
-                        try? keychain.saveAPIKey(apiKeyInput)
-                        apiKeyInput = ""
-                        keySaved = true
+                        do {
+                            try keychain.saveAPIKey(apiKeyInput)
+                            apiKeyInput = ""
+                            keySaved = true
+                            keyError = nil
+                        } catch {
+                            keySaved = false
+                            keyError = error.localizedDescription
+                        }
                     }
                     .font(AppTypography.buttonLabel)
+                }
+                if let keyError {
+                    Text(keyError)
+                        .font(AppTypography.metaLabel)
+                        .foregroundColor(AppColors.danger)
                 }
                 if keySaved {
                     Text("API key saved to Keychain")
@@ -141,7 +155,7 @@ struct SettingsView: View {
             }
 
             HStack(spacing: AppSpacing.space4) {
-                SecondaryButton(title: "Test Connection") {
+                SecondaryButton(title: isTestingConnection ? "Testing..." : "Test Connection") {
                     testConnection()
                 }
                 if let result = connectionTestResult {
@@ -167,6 +181,17 @@ struct SettingsView: View {
     }
 
     private func testConnection() {
-        connectionTestResult = "Not yet implemented" // ponytail: wired in Phase 6
+        isTestingConnection = true
+        connectionTestResult = nil
+
+        Task {
+            do {
+                try await aiService.testConnection()
+                connectionTestResult = "OK"
+            } catch {
+                connectionTestResult = error.localizedDescription
+            }
+            isTestingConnection = false
+        }
     }
 }

@@ -77,4 +77,24 @@ final class AIResponseParsingTests: XCTestCase {
         let result = try service.parseContent(json)
         XCTAssertEqual(result.deadline, "12/31/2026")
     }
+
+    func test_selectingFields_keepsOnlySelectedSuggestionValues() {
+        let suggestion = AISuggestion(
+            title: "Selected title",
+            journal: "Ignored journal",
+            status: "Submitted",
+            deadline: "2026-12-31",
+            note: "Ignored note",
+            confidence: 0.7
+        )
+
+        let selected = suggestion.onlyFields(["title", "deadline"])
+
+        XCTAssertEqual(selected.title, "Selected title")
+        XCTAssertEqual(selected.deadline, "2026-12-31")
+        XCTAssertEqual(selected.journal, "")
+        XCTAssertEqual(selected.status, "")
+        XCTAssertEqual(selected.note, "")
+        XCTAssertEqual(selected.confidence, 0.7)
+    }
 }
