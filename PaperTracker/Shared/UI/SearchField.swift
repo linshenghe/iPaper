@@ -22,7 +22,7 @@ struct SearchField: View {
             }
         }
         .padding(.horizontal, AppSpacing.space4)
-        .frame(width: AppMetrics.toolbarSearchWidth, height: AppMetrics.controlHeightStandard)
+        .frame(minWidth: 120, idealWidth: AppMetrics.toolbarSearchWidth, maxHeight: AppMetrics.controlHeightStandard)
         .background(AppColors.surfaceSecondary)
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.searchFieldCorner)

@@ -11,6 +11,8 @@ struct PaperTrackerApp: App {
                 .environmentObject(environment.dataStore)
                 .environmentObject(environment.timerController)
         }
+        .defaultSize(width: 900, height: 600)
+        .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .appSettings) {
                 // ponytail: Settings handled via sidebar sheet, not system prefs window
