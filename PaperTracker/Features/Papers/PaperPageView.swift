@@ -91,7 +91,7 @@ struct PaperPageView: View {
         } else {
             timerController.start(paperID: paper.id)
         }
-        try? dataStore.save()
+        dataStore.saveOrReportError()
     }
 
     // MARK: - Secondary status

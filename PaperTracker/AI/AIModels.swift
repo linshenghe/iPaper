@@ -8,6 +8,17 @@ struct AISuggestion: Codable, Equatable {
     var deadline: String = ""
     var note: String = ""
     var confidence: Double = 0.0
+
+    func onlyFields(_ fields: Set<String>) -> AISuggestion {
+        AISuggestion(
+            title: fields.contains("title") ? title : "",
+            journal: fields.contains("journal") ? journal : "",
+            status: fields.contains("status") ? status : "",
+            deadline: fields.contains("deadline") ? deadline : "",
+            note: fields.contains("note") ? note : "",
+            confidence: confidence
+        )
+    }
 }
 
 enum AIError: LocalizedError {

@@ -6,6 +6,8 @@ import UniformTypeIdentifiers
 struct ImportExportPanel: View {
     @ObservedObject var dataStore: DataStore
     @StateObject private var importService: ImportService
+    @State private var exportMessage: String?
+    @State private var exportFailed = false
 
     init(dataStore: DataStore) {
         self.dataStore = dataStore
@@ -79,6 +81,12 @@ struct ImportExportPanel: View {
                 SecondaryButton(title: "导出 CSV...") {
                     exportCSV()
                 }
+
+                if let exportMessage {
+                    Text(exportMessage)
+                        .font(AppTypography.metaLabel)
+                        .foregroundColor(exportFailed ? AppColors.danger : AppColors.success)
+                }
             }
         }
     }
@@ -104,14 +112,22 @@ struct ImportExportPanel: View {
 
         guard panel.runModal() == .OK, let dir = panel.urls.first else { return }
 
+        exportMessage = nil
+        exportFailed = false
         let csv = CSVExporter.exportAll(data: dataStore.appData)
         let files: [(String, String)] = [
             ("papers.csv", csv.papersCSV),
             ("reviews.csv", csv.reviewsCSV),
             ("sessions.csv", csv.sessionsCSV),
         ]
-        for (name, content) in files {
-            try? content.write(to: dir.appendingPathComponent(name), atomically: true, encoding: .utf8)
+        do {
+            for (name, content) in files {
+                try content.write(to: dir.appendingPathComponent(name), atomically: true, encoding: .utf8)
+            }
+            exportMessage = "CSV 导出完成。"
+        } catch {
+            exportFailed = true
+            exportMessage = "CSV 导出失败：\(error.localizedDescription)"
         }
     }
 }

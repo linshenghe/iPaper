@@ -121,4 +121,18 @@ final class DataStoreTests: XCTestCase {
         XCTAssertEqual(data.sessions[0].id, "s_test")
         XCTAssertEqual(data.sessions[0].durationSeconds, 3600)
     }
+
+    // MARK: - Save error reporting
+
+    func test_saveReportingFailure_setsActiveError() throws {
+        let directoryURL = tempDir.appendingPathComponent("not-a-file")
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+
+        let store = DataStore(dataURL: directoryURL)
+        let saved = store.saveOrReportError()
+
+        XCTAssertFalse(saved)
+        XCTAssertEqual(store.activeError?.title, "尚未保存到磁盘")
+        XCTAssertNil(store.appData.settings.lastSavedAt)
+    }
 }

@@ -79,35 +79,35 @@ struct AIAssistSheet: View {
                             value: suggestion.title,
                             confidence: max(0, suggestion.confidence),
                             isApplied: appliedFields.contains("title"),
-                            onApply: { apply("title", \.title) }
+                            onApply: { apply("title") }
                         )
                         AIAssistSuggestionCard(
                             label: "Journal",
                             value: suggestion.journal,
                             confidence: max(0, suggestion.confidence),
                             isApplied: appliedFields.contains("journal"),
-                            onApply: { apply("journal", \.journal) }
+                            onApply: { apply("journal") }
                         )
                         AIAssistSuggestionCard(
                             label: "Status",
                             value: suggestion.status,
                             confidence: max(0, suggestion.status.isEmpty ? 0 : suggestion.confidence),
                             isApplied: appliedFields.contains("status"),
-                            onApply: { apply("status", \.status) }
+                            onApply: { apply("status") }
                         )
                         AIAssistSuggestionCard(
                             label: "Deadline",
                             value: suggestion.deadline,
                             confidence: max(0, suggestion.deadline.isEmpty ? 0 : suggestion.confidence),
                             isApplied: appliedFields.contains("deadline"),
-                            onApply: { apply("deadline", \.deadline) }
+                            onApply: { apply("deadline") }
                         )
                         AIAssistSuggestionCard(
                             label: "Note",
                             value: suggestion.note,
                             confidence: max(0, suggestion.note.isEmpty ? 0 : suggestion.confidence),
                             isApplied: appliedFields.contains("note"),
-                            onApply: { apply("note", \.note) }
+                            onApply: { apply("note") }
                         )
                     }
                     .padding(.horizontal, AppSpacing.sheetPadding)
@@ -116,10 +116,10 @@ struct AIAssistSheet: View {
                 // Footer
                 HStack {
                     Spacer()
-                    PrimaryButton(title: "Apply Selected & Close") {
-                        onApplyFields(suggestion)
+                    PrimaryButton(title: "Apply Selected & Close", action: {
+                        onApplyFields(suggestion.onlyFields(appliedFields))
                         dismiss()
-                    }
+                    }, isEnabled: !appliedFields.isEmpty)
                 }
                 .padding(.horizontal, AppSpacing.sheetPadding)
                 .padding(.vertical, AppSpacing.space8)
@@ -152,12 +152,7 @@ struct AIAssistSheet: View {
         }
     }
 
-    private func apply(_ field: String, _ keyPath: WritableKeyPath<AISuggestion, String>) {
+    private func apply(_ field: String) {
         appliedFields.insert(field)
-        guard var s = suggestion else { return }
-        // ponytail: just track which fields were selected; actual application
-        // happens in onApplyFields via the parent form
-        s[keyPath: keyPath] = s[keyPath: keyPath]
-        // No-op here — the parent receives the full suggestion in onApplyFields
     }
 }
