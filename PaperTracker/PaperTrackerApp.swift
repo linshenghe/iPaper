@@ -1,10 +1,3 @@
-//
-//  PaperTrackerApp.swift
-//  PaperTracker
-//
-//  Created by 何林晟 on 2026/6/29.
-//
-
 import SwiftUI
 
 @main
@@ -17,6 +10,11 @@ struct PaperTrackerApp: App {
                 .environmentObject(environment)
                 .environmentObject(environment.dataStore)
                 .environmentObject(environment.timerController)
+        }
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                // ponytail: Settings handled via sidebar sheet, not system prefs window
+            }
         }
     }
 }

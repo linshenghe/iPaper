@@ -72,6 +72,6 @@ tool-paper-tracker/
 ## 当前状态
 
 - 仓库结构已整理为 App 开发形态
-- Xcode license 已可用于本机 `xcodebuild`
-- Xcode 工程尚未创建
-- 网页原型已归档，可作为旧数据导入样本和交互参考
+- 7 个 Phase 全部完成，27 个测试全通过
+- Papers / Reviews / Sessions / Settings / AI Assist 功能完整
+- 网页原型已归档至 `prototypes/web/`，可作为旧数据导入样本
