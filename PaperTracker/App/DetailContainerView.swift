@@ -27,7 +27,8 @@ struct DetailContainerView: View {
     private var papersForSelection: [Paper] {
         let papers = dataStore.appData.papers
         switch selection {
-        case .allPapers, .today: return papers
+        case .allPapers: return papers
+        case .today: return papers.filter(isTodayPaper)
         case .writing: return papers.filter { $0.status == .writing }
         case .submitted: return papers.filter { $0.status == .submitted }
         case .rnr: return papers.filter { $0.status == .rnr }
@@ -36,6 +37,10 @@ struct DetailContainerView: View {
         default: return []
         }
     }
+}
+
+private func isTodayPaper(_ paper: Paper) -> Bool {
+    paper.isRunning || paper.deadline.map { Calendar.current.isDateInToday($0) } == true
 }
 
 #Preview {

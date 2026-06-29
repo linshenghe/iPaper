@@ -274,15 +274,17 @@ struct PaperEditorSheet: View {
             dataStore.appData.papers.append(newPaper)
         }
 
-        try? dataStore.save()
-        dismiss()
+        if dataStore.saveOrReportError() {
+            dismiss()
+        }
     }
 
     private func deletePaper() {
         guard let paper = existingPaper else { return }
         dataStore.appData.papers.removeAll { $0.id == paper.id }
-        try? dataStore.save()
-        dismiss()
+        if dataStore.saveOrReportError() {
+            dismiss()
+        }
     }
 
     private func tryDismiss() {

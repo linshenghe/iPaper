@@ -85,8 +85,9 @@ struct ReviewEditorSheet: View {
                 if !isNew {
                     Button("Delete", role: .destructive) {
                         dataStore.appData.reviews.removeAll { $0.id == existingReview?.id }
-                        try? dataStore.save()
-                        dismiss()
+                        if dataStore.saveOrReportError() {
+                            dismiss()
+                        }
                     }
                 }
                 Spacer()
@@ -122,8 +123,9 @@ struct ReviewEditorSheet: View {
             )
             dataStore.appData.reviews.append(review)
         }
-        try? dataStore.save()
-        dismiss()
+        if dataStore.saveOrReportError() {
+            dismiss()
+        }
     }
 
     private func tryDismiss() {

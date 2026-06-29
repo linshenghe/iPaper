@@ -57,17 +57,21 @@ struct SessionEditorSheet: View {
             HStack {
                 Button("Delete", role: .destructive) {
                     dataStore.appData.sessions.removeAll { $0.id == session.id }
-                    try? dataStore.save()
-                    dismiss()
+                    if dataStore.saveOrReportError() {
+                        dismiss()
+                    }
                 }
                 Spacer()
                 Button("Cancel") { dismiss() }
                 PrimaryButton(title: "Save") {
                     if let idx = dataStore.appData.sessions.firstIndex(where: { $0.id == session.id }) {
                         dataStore.appData.sessions[idx].note = note
-                        try? dataStore.save()
+                        if dataStore.saveOrReportError() {
+                            dismiss()
+                        }
+                    } else {
+                        dismiss()
                     }
-                    dismiss()
                 }
             }
             .padding(.horizontal, AppSpacing.sheetPadding)
