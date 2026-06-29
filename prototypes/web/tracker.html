@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论文进度追踪器</title>
+<style>
+/* ===== Variables ===== */
+:root {
+  --bg:        #F5F4F0;
+  --card:      #FFFFFF;
+  --text:      #1E1E24;
+  --text-dim:  #6B6E7B;
+  --accent:    #2F4985;
+  --accent-hv: #1E3466;
+  --rule:      #E4E3DD;
+  --red:       #C0392B;
+  --red-bg:    #FFEBEE;
+  --yellow:    #B8860B;
+  --yellow-bg: #FFF8E1;
+  --radius:    6px;
+
+  --s-writing:    #B8860B;
+  --s-submitted:  #4A7C96;
+  --s-rnr:        #6B4C7A;
+  --s-accepted:   #3D7A5C;
+  --s-published:  #2E7D7B;
+}
+
+/* ===== Reset ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Layout ===== */
+header {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+header h1 {
+  font-family: Charter, Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.header-actions { display: flex; gap: 8px; }
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ===== Cards ===== */
+section {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.section-header h2 {
+  font-family: Charter, Georgia, serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+  flex: 1;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: inherit; font-size: 0.8125rem;
+  padding: 6px 14px; border-radius: var(--radius);
+  cursor: pointer; border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap; user-select: none;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hv); }
+.btn-ghost { background: #fff; color: var(--text); border-color: var(--rule); }
+.btn-ghost:hover { background: #f8f8f6; }
+.btn-danger { background: #fff; color: var(--red); border-color: transparent; }
+.btn-danger:hover { background: var(--red-bg); }
+.btn-sm { padding: 3px 10px; font-size: 0.75rem; }
+
+/* ===== Forms ===== */
+.form-wrap {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.3s ease;
+  margin-bottom: 0;
+}
+.form-wrap.expanded { max-height: 200px; margin-bottom: 16px; }
+.form-row {
+  display: flex; gap: 10px; align-items: flex-end;
+  flex-wrap: wrap;
+}
+.form-row label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 2px; }
+.form-row input, .form-row select {
+  font-family: inherit; font-size: 0.875rem;
+  padding: 6px 10px; border: 1px solid var(--rule); border-radius: 4px;
+  background: #fff; color: var(--text);
+  min-width: 0;
+}
+.form-row input:focus, .form-row select:focus { outline: none; border-color: var(--accent); }
+.form-row input { width: 180px; }
+.form-row select { width: 120px; }
+.form-row .field-title { width: 260px; }
+
+/* ===== Tables ===== */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+thead th {
+  text-align: left; font-weight: 500; font-size: 0.75rem;
+  color: var(--text-dim); letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--rule);
+}
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+td.actions { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ===== Status badges ===== */
+.status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; letter-spacing: 0.05em;
+}
+.status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-writing   { color: var(--s-writing); }    .status-writing::before   { background: var(--s-writing); }
+.status-submitted { color: var(--s-submitted); }  .status-submitted::before { background: var(--s-submitted); }
+.status-rnr       { color: var(--s-rnr); }        .status-rnr::before       { background: var(--s-rnr); }
+.status-accepted  { color: var(--s-accepted); }   .status-accepted::before  { background: var(--s-accepted); }
+.status-published { color: var(--s-published); }  .status-published::before { background: var(--s-published); }
+
+/* review statuses */
+.status-pending   { color: var(--text-dim); }     .status-pending::before   { background: var(--text-dim); }
+.status-reviewing { color: var(--accent); }        .status-reviewing::before { background: var(--accent); }
+.status-done      { color: #3D7A5C; }             .status-done::before      { background: #3D7A5C; }
+
+/* ===== Deadlines ===== */
+.deadline-overdue { background: var(--red-bg); color: var(--red); padding: 2px 8px; border-radius: 3px; font-weight: 500; }
+.deadline-soon    { background: var(--yellow-bg); color: var(--yellow); padding: 2px 8px; border-radius: 3px; font-weight: 500; }
+
+/* ===== Timer ===== */
+.time-cell { font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+tr.timer-running td { background: rgba(47,73,133,0.03); }
+tr.timer-running { animation: timerPulse 3s ease-in-out infinite; }
+@keyframes timerPulse {
+  0%, 100% { box-shadow: inset 3px 0 0 var(--accent), 0 0 0 0 rgba(47,73,133,0.12); }
+  50%      { box-shadow: inset 3px 0 0 var(--accent), 0 0 0 4px rgba(47,73,133,0.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  tr.timer-running { animation: none; }
+}
+
+/* ===== Empty state ===== */
+.empty-state {
+  display: none; text-align: center; padding: 32px 16px;
+  color: var(--text-dim); font-size: 0.9375rem;
+}
+.empty-state.visible { display: block; }
+
+/* ===== Toast ===== */
+#toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--text); color: #fff; padding: 10px 18px;
+  border-radius: var(--radius); font-size: 0.8125rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: toastIn 0.3s ease;
+  max-width: 400px;
+}
+.toast.fadeout { opacity: 0; transition: opacity 0.3s; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== Misc ===== */
+.note-cell { color: var(--text-dim); font-size: 0.8125rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td.actions { white-space: nowrap; }
+
+/* ===== Responsive floor ===== */
+@media (max-width: 768px) {
+  header { flex-direction: column; gap: 12px; padding: 20px 16px 0; }
+  main { padding: 16px; }
+  section { padding: 16px; }
+  .form-row { flex-direction: column; }
+  .form-row input, .form-row select, .form-row .field-title { width: 100%; }
+  .section-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>论文进度追踪器</h1>
+  <div class="header-actions">
+    <button class="btn btn-ghost" id="btn-link-file">🔗 关联文件</button>
+    <button class="btn btn-ghost" id="btn-import">📥 导入 JSON</button>
+    <button class="btn btn-ghost" id="btn-export-csv">📤 导出 CSV</button>
+    <button class="btn btn-ghost" id="btn-backup">💾 备份</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ====== Papers ====== -->
+<section id="papers-section">
+  <div class="section-header">
+    <h2>我的论文</h2>
+    <button class="btn btn-primary" id="btn-toggle-paper-form">+ 添加论文</button>
+  </div>
+  <div class="form-wrap" id="paper-form-wrap">
+    <form id="paper-form" autocomplete="off">
+      <input type="hidden" id="paper-edit-id">
+      <div class="form-row">
+        <label>论文标题 <input type="text" id="paper-title" class="field-title" required></label>
+        <label>状态
+          <select id="paper-status">
+            <option value="写作中">写作中</option>
+            <option value="投稿中">投稿中</option>
+            <option value="R&R">R&R</option>
+            <option value="已接收">已接收</option>
+            <option value="已发表">已发表</option>
+          </select>
+        </label>
+        <label>目标期刊 <input type="text" id="paper-journal"></label>
+        <label>截止日期 <input type="date" id="paper-deadline"></label>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <button type="button" class="btn btn-ghost" id="btn-cancel-paper" style="display:none">取消</button>
+      </div>
+    </form>
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th>论文名</th><th>状态</th><th>目标期刊</th><th>截止日</th><th>累计时间</th><th>操作</th>
+  </tr></thead><tbody id="papers-tbody"></tbody></table></div>
+  <div class="empty-state" id="papers-empty">还没有论文，点击「+ 添加论文」开始追踪</div>
+</section>
+
+<!-- ====== Reviews ====== -->
+<section id="reviews-section">
+  <div class="section-header">
+    <h2>审稿任务</h2>
+    <button class="btn btn-primary" id="btn-toggle-review-form">+ 添加审稿</button>
+  </div>
+  <div class="form-wrap" id="review-form-wrap">
+    <form id="review-form" autocomplete="off">
+      <input type="hidden" id="review-edit-id">
+      <div class="form-row">
+        <label>期刊名 <input type="text" id="review-journal" required></label>
+        <label>状态
+          <select id="review-status">
+            <option value="待审">待审</option>
+            <option value="审稿中">审稿中</option>
+            <option value="已提交">已提交</option>
+          </select>
+        </label>
+        <label>截止日期 <input type="date" id="review-deadline"></label>
+        <label>备注 <input type="text" id="review-note"></label>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <button type="button" class="btn btn-ghost" id="btn-cancel-review" style="display:none">取消</button>
+      </div>
+    </form>
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th>期刊</th><th>截止日</th><th>状态</th><th>备注</th><th>操作</th>
+  </tr></thead><tbody id="reviews-tbody"></tbody></table></div>
+  <div class="empty-state" id="reviews-empty">还没有审稿任务，点击「+ 添加审稿」开始记录</div>
+</section>
+
+<!-- ====== Sessions ====== -->
+<section id="sessions-section">
+  <div class="section-header">
+    <h2>工作日志</h2>
+    <button class="btn btn-primary" id="btn-toggle-session-form">+ 添加日志</button>
+  </div>
+  <div class="form-wrap" id="session-form-wrap">
+    <form id="session-form" autocomplete="off">
+      <div class="form-row">
+        <label>类型
+          <select id="session-type">
+            <option value="paper">写作</option>
+            <option value="review">审稿</option>
+          </select>
+        </label>
+        <label>关联项目 <select id="session-target" required></select></label>
+        <label>时长（分钟）<input type="number" id="session-duration" min="1" value="30" required></label>
+        <label>备注 <input type="text" id="session-note"></label>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th>日期</th><th>类型</th><th>关联项目</th><th>时长</th><th>备注</th><th>操作</th>
+  </tr></thead><tbody id="sessions-tbody"></tbody></table></div>
+  <div class="empty-state" id="sessions-empty">还没有工作日志。论文计时停止时会自动生成，也可以手动添加</div>
+</section>
+
+</main>
+
+<div id="toast-container"></div>
+<input type="file" id="import-input" hidden accept=".json">
+
+<script>
+/* ================================================================
+   State & Utilities
+   ================================================================ */
+let papers = [];
+let reviews = [];
+let sessions = [];
+let timerInterval = null;
+const TAB_ID = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+const STATUS_KEYS = {
+  '写作中': 'writing', '投稿中': 'submitted', 'R&R': 'rnr',
+  '已接收': 'accepted', '已发表': 'published',
+  '待审': 'pending', '审稿中': 'reviewing', '已提交': 'done'
+};
+
+function gid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+function formatTime(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+function formatTimer(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function deadlineClass(d) {
+  if (!d) return '';
+  const diff = Math.floor((new Date(d + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
+  if (diff < 0) return 'deadline-overdue';
+  if (diff <= 7) return 'deadline-soon';
+  return '';
+}
+function statusClass(s) { const k = STATUS_KEYS[s]; return k ? `status-${k}` : ''; }
+
+function toast(msg) {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => { el.classList.add('fadeout'); setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+/* ================================================================
+   Data Persistence
+   ================================================================ */
+async function loadData() {
+  // Try disk first
+  if (await loadFromDisk()) return;
+  // Fall back to localStorage
+  try {
+    const raw = localStorage.getItem('paper_tracker_data');
+    if (raw) {
+      const data = JSON.parse(raw);
+      papers = data.papers || [];
+      reviews = data.reviews || [];
+      sessions = data.sessions || [];
+    }
+  } catch (e) { toast('⚠️ 数据读取失败，已重置'); papers = []; reviews = []; sessions = []; }
+}
+function saveData() {
+  const json = JSON.stringify({ papers, reviews, sessions });
+  localStorage.setItem('paper_tracker_data', json);
+  // Fire-and-forget: write to disk if file handle available
+  if (fileHandle) {
+    fileHandle.createWritable().then(w => w.write(json).then(() => w.close())).catch(() => {});
+  }
+}
+
+/* ================================================================
+   File System Access — disk sync (Chrome only)
+   ================================================================ */
+let fileHandle = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('paper-tracker-fs', 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore('handles'); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getStoredHandle() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction('handles', 'readonly');
+      const req = tx.objectStore('handles').get('data-file');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    });
+  } catch (e) { return null; }
+}
+
+async function storeHandle(handle) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(handle, 'data-file');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  } catch (e) { /* ignore */ }
+}
+
+async function initFileHandle() {
+  if (!window.showOpenFilePicker) {
+    document.getElementById('btn-link-file').style.display = 'none';
+    return;
+  }
+  fileHandle = await getStoredHandle();
+  if (fileHandle) {
+    try {
+      const perm = await fileHandle.queryPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') {
+        const req = await fileHandle.requestPermission({ mode: 'readwrite' });
+        if (req !== 'granted') fileHandle = null;
+      }
+    } catch (e) { fileHandle = null; }
+  }
+  updateLinkButton();
+}
+
+function updateLinkButton() {
+  const btn = document.getElementById('btn-link-file');
+  btn.textContent = fileHandle ? '✅ 硬盘同步' : '🔗 关联文件';
+  btn.title = fileHandle ? '数据自动同步到 data.json' : '关联 data.json 实现硬盘同步';
+}
+
+async function linkDataFile() {
+  // If stored handle exists but permission lapsed, just re-authorize (no file picker)
+  if (!fileHandle) {
+    const stored = await getStoredHandle();
+    if (stored) {
+      try {
+        const perm = await stored.requestPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
+          fileHandle = stored;
+          await loadFromDisk();
+          updateLinkButton();
+          renderAll();
+          toast('✅ 已重新连接，数据已同步');
+          return;
+        }
+      } catch (e) { /* fall through to file picker */ }
+    }
+  }
+
+  // Otherwise show file picker
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+      multiple: false, startIn: 'documents'
+    });
+    const perm = await handle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') { toast('需要读写权限才能同步'); return; }
+
+    // Read file content
+    const file = await handle.getFile();
+    const fileData = JSON.parse(await file.text());
+    const hasFileData = (fileData.papers || []).length + (fileData.reviews || []).length > 0;
+    const hasLocalData = papers.length + reviews.length > 0;
+
+    if (hasFileData && hasLocalData) {
+      if (!confirm(`文件中有 ${fileData.papers?.length || 0} 篇论文、${fileData.reviews?.length || 0} 条审稿。\n浏览器中有 ${papers.length} 篇论文、${reviews.length} 条审稿。\n\n用文件数据替换浏览器数据？\n（选"取消"则用浏览器数据覆盖文件）`)) {
+        // Keep browser data, write to file
+        const json = JSON.stringify({ papers, reviews, sessions });
+        const writable = await handle.createWritable();
+        await writable.write(json);
+        await writable.close();
+      } else {
+        // Use file data
+        papers = fileData.papers || [];
+        reviews = fileData.reviews || [];
+        sessions = fileData.sessions || [];
+        localStorage.setItem('paper_tracker_data', JSON.stringify({ papers, reviews, sessions }));
+      }
+    } else if (hasFileData && !hasLocalData) {
+      papers = fileData.papers || [];
+      reviews = fileData.reviews || [];
+      sessions = fileData.sessions || [];
+      localStorage.setItem('paper_tracker_data', JSON.stringify({ papers, reviews, sessions }));
+    } else if (!hasFileData && hasLocalData) {
+      const json = JSON.stringify({ papers, reviews, sessions });
+      const writable = await handle.createWritable();
+      await writable.write(json);
+      await writable.close();
+    }
+
+    await storeHandle(handle);
+    fileHandle = handle;
+    updateLinkButton();
+    renderAll();
+    toast(fileHandle ? '✅ 已关联，数据将自动同步到硬盘' : '');
+  } catch (e) {
+    if (e.name !== 'AbortError') toast('❌ 关联失败: ' + e.message);
+  }
+}
+
+async function loadFromDisk() {
+  if (!fileHandle) return false;
+  try {
+    const file = await fileHandle.getFile();
+    const data = JSON.parse(await file.text());
+    papers = data.papers || [];
+    reviews = data.reviews || [];
+    sessions = data.sessions || [];
+    localStorage.setItem('paper_tracker_data', JSON.stringify(data));
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ================================================================
+   Timer Engine
+   ================================================================ */
+function recoverTimers() {
+  const now = Date.now();
+  let fixed = false;
+  papers.forEach(p => {
+    // Fix corrupted state: isRunning but no sessionStart
+    if (p.isRunning && !p.sessionStart) { p.isRunning = false; fixed = true; return; }
+    if (p.isRunning && p.sessionStart) {
+      const elapsed = Math.floor((now - p.sessionStart) / 1000);
+      p.totalSeconds += elapsed;
+      p.sessionStart = now;
+      fixed = true;
+    }
+  });
+  if (fixed) saveData();
+}
+
+function ensureTimer() {
+  const hasRunning = papers.some(p => p.isRunning);
+  if (hasRunning && !timerInterval) timerInterval = setInterval(tick, 1000);
+  else if (!hasRunning && timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function tick() {
+  const now = Date.now();
+  papers.forEach(p => {
+    if (p.isRunning && p.sessionStart) {
+      const total = p.totalSeconds + Math.floor((now - p.sessionStart) / 1000);
+      const cell = document.querySelector(`.time-cell[data-pid="${p.id}"]`);
+      if (cell) cell.textContent = formatTimer(total);
+    }
+  });
+}
+
+function startTimer(paperId) {
+  papers.forEach(p => {
+    if (p.isRunning && p.id !== paperId) stopTimer(p.id);
+  });
+  const p = papers.find(x => x.id === paperId);
+  if (!p || p.isRunning) return;
+  p.isRunning = true; p.sessionStart = Date.now();
+  saveData(); renderAll(); ensureTimer(); updateTabHeartbeat();
+  toast(`▶ 开始计时：${p.title}`);
+}
+
+function stopTimer(paperId) {
+  const p = papers.find(x => x.id === paperId);
+  if (!p || !p.isRunning || !p.sessionStart) return;
+  const elapsed = Math.floor((Date.now() - p.sessionStart) / 1000);
+  p.totalSeconds += elapsed; p.isRunning = false; p.sessionStart = null;
+  if (elapsed >= 10) {
+    sessions.unshift({
+      id: gid(), type: 'paper', targetId: p.id, targetName: p.title,
+      start: new Date(Date.now() - elapsed * 1000).toISOString(),
+      end: new Date().toISOString(), durationSeconds: elapsed, note: ''
+    });
+  }
+  saveData(); renderAll(); ensureTimer(); updateTabHeartbeat();
+  toast(`⏹ 停止计时：${p.title}，本次 ${formatTime(elapsed)}`);
+}
+
+/* ================================================================
+   Multi-tab Detection
+   ================================================================ */
+function updateTabHeartbeat() {
+  const hasRunning = papers.some(p => p.isRunning);
+  localStorage.setItem('__pt_heartbeat__', JSON.stringify({ tab: TAB_ID, ts: Date.now(), running: hasRunning }));
+}
+
+function checkMultiTab() {
+  try {
+    const raw = localStorage.getItem('__pt_heartbeat__');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.tab !== TAB_ID && Date.now() - data.ts < 8000 && data.running) {
+      toast('⚠️ 检测到另一个标签页可能正在计时，请注意');
+    }
+  } catch (e) { /* ignore */ }
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === '__pt_heartbeat__') checkMultiTab();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { updateTabHeartbeat(); checkMultiTab(); }
+});
+window.addEventListener('beforeunload', () => {
+  const raw = localStorage.getItem('__pt_heartbeat__');
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      if (data.tab === TAB_ID) data.running = false;
+      localStorage.setItem('__pt_heartbeat__', JSON.stringify(data));
+    } catch (e) { /* ignore */ }
+  }
+});
+
+/* ================================================================
+   Render
+   ================================================================ */
+function renderPapers() {
+  const tbody = document.getElementById('papers-tbody');
+  const empty = document.getElementById('papers-empty');
+  const tableWrap = tbody.closest('.table-wrap');
+  if (!papers.length) { tbody.innerHTML = ''; tableWrap.style.display = 'none'; empty.classList.add('visible'); return; }
+  tableWrap.style.display = ''; empty.classList.remove('visible');
+  const now = Date.now();
+  tbody.innerHTML = papers.map(p => {
+    const running = p.isRunning && p.sessionStart;
+    const total = running ? p.totalSeconds + Math.floor((now - p.sessionStart) / 1000) : p.totalSeconds;
+    const timeDisplay = running ? formatTimer(total) : formatTime(total);
+    return `<tr class="${running ? 'timer-running' : ''}">
+      <td>${esc(p.title)}</td>
+      <td><span class="status ${statusClass(p.status)}">${esc(p.status)}</span></td>
+      <td>${esc(p.journal || '—')}</td>
+      <td><span class="${deadlineClass(p.deadline)}">${p.deadline ? fmtDate(p.deadline) : '—'}</span></td>
+      <td class="time-cell" data-pid="${p.id}">${timeDisplay}</td>
+      <td class="actions">
+        ${running
+          ? `<button class="btn btn-sm btn-ghost" data-action="stop" data-pid="${p.id}">⏹ 停止</button>`
+          : `<button class="btn btn-sm btn-primary" data-action="start" data-pid="${p.id}">▶ 开始</button>`}
+        <button class="btn btn-sm btn-ghost" data-action="edit-paper" data-pid="${p.id}">✏️ 编辑</button>
+        <button class="btn btn-sm btn-danger" data-action="delete-paper" data-pid="${p.id}">🗑</button>
+      </td></tr>`;
+  }).join('');
+}
+
+function renderReviews() {
+  const tbody = document.getElementById('reviews-tbody');
+  const empty = document.getElementById('reviews-empty');
+  const tableWrap = tbody.closest('.table-wrap');
+  if (!reviews.length) { tbody.innerHTML = ''; tableWrap.style.display = 'none'; empty.classList.add('visible'); return; }
+  tableWrap.style.display = ''; empty.classList.remove('visible');
+  tbody.innerHTML = reviews.map(r => `<tr>
+    <td>${esc(r.journal)}</td>
+    <td><span class="${deadlineClass(r.deadline)}">${r.deadline ? fmtDate(r.deadline) : '—'}</span></td>
+    <td><span class="status ${statusClass(r.status)}">${esc(r.status)}</span></td>
+    <td class="note-cell">${esc(r.note || '—')}</td>
+    <td class="actions">
+      <button class="btn btn-sm btn-ghost" data-action="edit-review" data-rid="${r.id}">✏️ 编辑</button>
+      <button class="btn btn-sm btn-danger" data-action="delete-review" data-rid="${r.id}">🗑</button>
+    </td></tr>`).join('');
+}
+
+function renderSessions() {
+  const tbody = document.getElementById('sessions-tbody');
+  const empty = document.getElementById('sessions-empty');
+  const tableWrap = tbody.closest('.table-wrap');
+  if (!sessions.length) { tbody.innerHTML = ''; tableWrap.style.display = 'none'; empty.classList.add('visible'); return; }
+  tableWrap.style.display = ''; empty.classList.remove('visible');
+  tbody.innerHTML = sessions.map(s => `<tr>
+    <td>${fmtDate(s.start ? s.start.slice(0,10) : '')}</td>
+    <td><span class="status ${s.type === 'paper' ? 'status-writing' : 'status-reviewing'}">${s.type === 'paper' ? '写作' : '审稿'}</span></td>
+    <td>${esc(s.targetName || '—')}</td>
+    <td>${formatTime(s.durationSeconds || 0)}</td>
+    <td class="note-cell" id="note-${s.id}">${esc(s.note || '—')}</td>
+    <td class="actions">
+      <button class="btn btn-sm btn-ghost" data-action="edit-session-note" data-sid="${s.id}">✏️ 备注</button>
+      <button class="btn btn-sm btn-danger" data-action="delete-session" data-sid="${s.id}">🗑</button>
+    </td></tr>`).join('');
+}
+
+function renderAll() { renderPapers(); renderReviews(); renderSessions(); }
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ================================================================
+   Export / Import
+   ================================================================ */
+function downloadFile(filename, content, mime = 'text/csv;charset=utf-8') {
+  const blob = new Blob(['﻿' + content], { type: mime }); // BOM for Excel
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+function csvEscape(s) { return '"' + String(s || '').replace(/"/g, '""') + '"'; }
+
+function exportCSV() {
+  downloadFile('papers.csv',
+    'title,status,journal,deadline,total_hours\n' +
+    papers.map(p => csvEscape(p.title) + ',' + csvEscape(p.status) + ',' + csvEscape(p.journal) + ',' + (p.deadline||'') + ',' + (p.totalSeconds/3600).toFixed(1)).join('\n'));
+  downloadFile('reviews.csv',
+    'journal,deadline,status,note\n' +
+    reviews.map(r => csvEscape(r.journal) + ',' + (r.deadline||'') + ',' + csvEscape(r.status) + ',' + csvEscape(r.note)).join('\n'));
+  downloadFile('sessions.csv',
+    'type,target,start,end,duration_minutes,note\n' +
+    sessions.map(s => csvEscape(s.type) + ',' + csvEscape(s.targetName) + ',' + (s.start||'') + ',' + (s.end||'') + ',' + ((s.durationSeconds||0)/60).toFixed(0) + ',' + csvEscape(s.note)).join('\n'));
+  toast('已导出 papers.csv / reviews.csv / sessions.csv');
+}
+
+function exportJSON() {
+  downloadFile('paper-tracker-backup.json',
+    JSON.stringify({ papers, reviews, sessions, exportedAt: new Date().toISOString() }, null, 2),
+    'application/json');
+  toast('💾 完整备份已下载');
+}
+
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      const np = (data.papers || []).length;
+      const nr = (data.reviews || []).length;
+      const ns = (data.sessions || []).length;
+      if (!np && !nr && !ns) { toast('文件中没有可导入的数据'); return; }
+      if (!confirm(`将合并导入：\n${np} 篇论文\n${nr} 条审稿\n${ns} 条日志\n\n确认合并到当前数据？`)) return;
+      // Sanitize imported papers: strip running state from other browsers
+      (data.papers || []).forEach(p => { p.isRunning = false; p.sessionStart = null; });
+      papers.push(...(data.papers || []));
+      reviews.push(...(data.reviews || []));
+      sessions.push(...(data.sessions || []));
+      sessions.sort((a, b) => new Date(b.start || b.end || 0) - new Date(a.start || a.end || 0));
+      saveData(); renderAll();
+      toast(`✅ 已导入 ${np} 篇论文、${nr} 条审稿、${ns} 条日志`);
+    } catch (e) { toast('❌ JSON 解析失败，请检查文件格式'); }
+  };
+  reader.readAsText(file);
+}
+
+/* ================================================================
+   Paper Form
+   ================================================================ */
+function resetPaperForm() {
+  document.getElementById('paper-edit-id').value = '';
+  document.getElementById('paper-title').value = '';
+  document.getElementById('paper-status').value = '写作中';
+  document.getElementById('paper-journal').value = '';
+  document.getElementById('paper-deadline').value = '';
+  document.getElementById('btn-cancel-paper').style.display = 'none';
+  document.getElementById('btn-toggle-paper-form').textContent = '+ 添加论文';
+}
+
+function showPaperForm(paper) {
+  const wrap = document.getElementById('paper-form-wrap');
+  wrap.classList.add('expanded');
+  document.getElementById('btn-toggle-paper-form').textContent = '收起';
+  if (paper) {
+    document.getElementById('paper-edit-id').value = paper.id;
+    document.getElementById('paper-title').value = paper.title;
+    document.getElementById('paper-status').value = paper.status;
+    document.getElementById('paper-journal').value = paper.journal || '';
+    document.getElementById('paper-deadline').value = paper.deadline || '';
+    document.getElementById('btn-cancel-paper').style.display = '';
+  }
+}
+
+function submitPaper(e) {
+  e.preventDefault();
+  const editId = document.getElementById('paper-edit-id').value;
+  const data = {
+    title: document.getElementById('paper-title').value.trim(),
+    status: document.getElementById('paper-status').value,
+    journal: document.getElementById('paper-journal').value.trim(),
+    deadline: document.getElementById('paper-deadline').value,
+  };
+  if (!data.title) { toast('请输入论文标题'); return; }
+
+  if (editId) {
+    const p = papers.find(x => x.id === editId);
+    if (p) { Object.assign(p, data); }
+  } else {
+    papers.push({
+      id: gid(), ...data,
+      totalSeconds: 0, isRunning: false, sessionStart: null,
+      createdAt: new Date().toISOString()
+    });
+  }
+  saveData(); renderAll();
+  document.getElementById('paper-form-wrap').classList.remove('expanded');
+  document.getElementById('btn-toggle-paper-form').textContent = '+ 添加论文';
+  resetPaperForm();
+}
+
+/* ================================================================
+   Review Form
+   ================================================================ */
+function resetReviewForm() {
+  document.getElementById('review-edit-id').value = '';
+  document.getElementById('review-journal').value = '';
+  document.getElementById('review-status').value = '待审';
+  document.getElementById('review-deadline').value = '';
+  document.getElementById('review-note').value = '';
+  document.getElementById('btn-cancel-review').style.display = 'none';
+  document.getElementById('btn-toggle-review-form').textContent = '+ 添加审稿';
+}
+
+function showReviewForm(review) {
+  const wrap = document.getElementById('review-form-wrap');
+  wrap.classList.add('expanded');
+  document.getElementById('btn-toggle-review-form').textContent = '收起';
+  if (review) {
+    document.getElementById('review-edit-id').value = review.id;
+    document.getElementById('review-journal').value = review.journal;
+    document.getElementById('review-status').value = review.status;
+    document.getElementById('review-deadline').value = review.deadline || '';
+    document.getElementById('review-note').value = review.note || '';
+    document.getElementById('btn-cancel-review').style.display = '';
+  }
+}
+
+function submitReview(e) {
+  e.preventDefault();
+  const editId = document.getElementById('review-edit-id').value;
+  const data = {
+    journal: document.getElementById('review-journal').value.trim(),
+    status: document.getElementById('review-status').value,
+    deadline: document.getElementById('review-deadline').value,
+    note: document.getElementById('review-note').value.trim(),
+  };
+  if (!data.journal) { toast('请输入期刊名'); return; }
+
+  if (editId) {
+    const r = reviews.find(x => x.id === editId);
+    if (r) Object.assign(r, data);
+  } else {
+    reviews.push({ id: gid(), ...data, createdAt: new Date().toISOString() });
+  }
+  saveData(); renderAll();
+  document.getElementById('review-form-wrap').classList.remove('expanded');
+  document.getElementById('btn-toggle-review-form').textContent = '+ 添加审稿';
+  resetReviewForm();
+}
+
+/* ================================================================
+   Session Form
+   ================================================================ */
+function updateSessionTargets() {
+  const type = document.getElementById('session-type').value;
+  const sel = document.getElementById('session-target');
+  sel.innerHTML = '';
+  const items = type === 'paper' ? papers : reviews;
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = type === 'paper' ? item.title : item.journal;
+    sel.appendChild(opt);
+  });
+  if (!items.length) {
+    const opt = document.createElement('option');
+    opt.value = ''; opt.textContent = type === 'paper' ? '请先添加论文' : '请先添加审稿';
+    opt.disabled = true;
+    sel.appendChild(opt);
+  }
+}
+
+function submitSession(e) {
+  e.preventDefault();
+  const type = document.getElementById('session-type').value;
+  const targetId = document.getElementById('session-target').value;
+  const durationMin = parseInt(document.getElementById('session-duration').value) || 0;
+  const note = document.getElementById('session-note').value.trim();
+  if (!targetId) { toast('请选择关联项目'); return; }
+  if (durationMin < 1) { toast('请输入有效时长'); return; }
+
+  const target = (type === 'paper' ? papers : reviews).find(x => x.id === targetId);
+  const targetName = target ? (type === 'paper' ? target.title : target.journal) : '(已删除)';
+  const durationSec = durationMin * 60;
+  const now = new Date();
+  sessions.unshift({
+    id: gid(), type, targetId, targetName,
+    start: new Date(now - durationSec * 1000).toISOString(),
+    end: now.toISOString(), durationSeconds: durationSec, note
+  });
+
+  saveData(); renderAll();
+  document.getElementById('session-form-wrap').classList.remove('expanded');
+  document.getElementById('btn-toggle-session-form').textContent = '+ 添加日志';
+  document.getElementById('session-note').value = '';
+  toast('✅ 日志已添加');
+}
+
+/* ================================================================
+   Session Note Editing
+   ================================================================ */
+function editSessionNote(sid) {
+  const s = sessions.find(x => x.id === sid);
+  if (!s) return;
+  const cell = document.getElementById('note-' + sid);
+  if (!cell) return;
+  const current = s.note || '';
+  cell.innerHTML = `<input type="text" value="${esc(current)}" id="note-input-${sid}"
+    style="width:160px;font-family:inherit;font-size:0.8125rem;padding:2px 6px;border:1px solid var(--rule);border-radius:3px"
+    onblur="saveSessionNote('${sid}')" onkeydown="if(event.key==='Enter')this.blur()">`;
+  const input = document.getElementById('note-input-' + sid);
+  if (input) { input.focus(); input.select(); }
+}
+
+function saveSessionNote(sid) {
+  const input = document.getElementById('note-input-' + sid);
+  const s = sessions.find(x => x.id === sid);
+  if (!s || !input) return;
+  s.note = input.value.trim();
+  saveData(); renderAll();
+}
+
+/* ================================================================
+   Event Binding
+   ================================================================ */
+function bindEvents() {
+  // Paper form toggle
+  document.getElementById('btn-toggle-paper-form').addEventListener('click', () => {
+    const wrap = document.getElementById('paper-form-wrap');
+    if (wrap.classList.contains('expanded')) {
+      wrap.classList.remove('expanded');
+      document.getElementById('btn-toggle-paper-form').textContent = '+ 添加论文';
+      resetPaperForm();
+    } else {
+      resetPaperForm();
+      showPaperForm();
+    }
+  });
+  document.getElementById('paper-form').addEventListener('submit', submitPaper);
+  document.getElementById('btn-cancel-paper').addEventListener('click', () => {
+    document.getElementById('paper-form-wrap').classList.remove('expanded');
+    document.getElementById('btn-toggle-paper-form').textContent = '+ 添加论文';
+    resetPaperForm();
+  });
+
+  // Review form toggle
+  document.getElementById('btn-toggle-review-form').addEventListener('click', () => {
+    const wrap = document.getElementById('review-form-wrap');
+    if (wrap.classList.contains('expanded')) {
+      wrap.classList.remove('expanded');
+      document.getElementById('btn-toggle-review-form').textContent = '+ 添加审稿';
+      resetReviewForm();
+    } else {
+      resetReviewForm();
+      showReviewForm();
+    }
+  });
+  document.getElementById('review-form').addEventListener('submit', submitReview);
+  document.getElementById('btn-cancel-review').addEventListener('click', () => {
+    document.getElementById('review-form-wrap').classList.remove('expanded');
+    document.getElementById('btn-toggle-review-form').textContent = '+ 添加审稿';
+    resetReviewForm();
+  });
+
+  // Session form toggle
+  document.getElementById('btn-toggle-session-form').addEventListener('click', () => {
+    const wrap = document.getElementById('session-form-wrap');
+    if (wrap.classList.contains('expanded')) {
+      wrap.classList.remove('expanded');
+      document.getElementById('btn-toggle-session-form').textContent = '+ 添加日志';
+    } else {
+      updateSessionTargets();
+      wrap.classList.add('expanded');
+      document.getElementById('btn-toggle-session-form').textContent = '收起';
+    }
+  });
+  document.getElementById('session-form').addEventListener('submit', submitSession);
+  document.getElementById('session-type').addEventListener('change', updateSessionTargets);
+
+  // Table action delegation
+  document.getElementById('papers-tbody').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const { action, pid } = btn.dataset;
+         if (action === 'start') startTimer(pid);
+    else if (action === 'stop') stopTimer(pid);
+    else if (action === 'edit-paper') {
+      const p = papers.find(x => x.id === pid);
+      if (p) { resetPaperForm(); showPaperForm(p); document.getElementById('paper-form-wrap').scrollIntoView({ behavior: 'smooth' }); }
+    }
+    else if (action === 'delete-paper') {
+      const p = papers.find(x => x.id === pid);
+      if (p && confirm(`确定删除论文「${p.title}」？此操作不可撤销。`)) {
+        if (p.isRunning) stopTimer(pid);
+        papers = papers.filter(x => x.id !== pid);
+        saveData(); renderAll(); ensureTimer();
+      }
+    }
+  });
+
+  document.getElementById('reviews-tbody').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const { action, rid } = btn.dataset;
+    if (action === 'edit-review') {
+      const r = reviews.find(x => x.id === rid);
+      if (r) { resetReviewForm(); showReviewForm(r); document.getElementById('review-form-wrap').scrollIntoView({ behavior: 'smooth' }); }
+    } else if (action === 'delete-review') {
+      const r = reviews.find(x => x.id === rid);
+      if (r && confirm(`确定删除审稿「${r.journal}」？`)) {
+        reviews = reviews.filter(x => x.id !== rid);
+        saveData(); renderAll();
+      }
+    }
+  });
+
+  document.getElementById('sessions-tbody').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const { action, sid } = btn.dataset;
+    if (action === 'edit-session-note') editSessionNote(sid);
+    else if (action === 'delete-session') {
+      if (confirm('确定删除这条日志？')) {
+        sessions = sessions.filter(x => x.id !== sid);
+        saveData(); renderAll();
+      }
+    }
+  });
+
+  // Export / Import / File Link
+  document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+  document.getElementById('btn-backup').addEventListener('click', exportJSON);
+  document.getElementById('btn-import').addEventListener('click', () => {
+    document.getElementById('import-input').click();
+  });
+  document.getElementById('import-input').addEventListener('change', (e) => {
+    if (e.target.files[0]) { importJSON(e.target.files[0]); e.target.value = ''; }
+  });
+  document.getElementById('btn-link-file').addEventListener('click', linkDataFile);
+
+  // Multi-tab heartbeat
+  setInterval(updateTabHeartbeat, 5000);
+}
+
+/* ================================================================
+   Init
+   ================================================================ */
+(async function init() {
+  await initFileHandle();
+  await loadData();
+  recoverTimers();
+  renderAll();
+  bindEvents();
+  ensureTimer();
+  checkMultiTab();
+  updateTabHeartbeat();
+})();
+
+// Expose for inline onclick handlers
+window.saveSessionNote = saveSessionNote;
+</script>
+</body>
+</html>

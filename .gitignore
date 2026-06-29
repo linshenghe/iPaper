@@ -1,0 +1,25 @@
+.DS_Store
+
+# Local secrets and machine-specific config
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.mobileprovision
+CLAUDE.md
+docs/handoffs/
+
+# Xcode local state
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+
+# Local build/output scratch files
+build/
+dist/
+output/
+
+# Runtime data belongs in Application Support, not the repo root
+/data.json

@@ -1,0 +1,17 @@
+{
+  "papers": [
+    {
+      "id": "p_001",
+      "title": "中国引文偏见",
+      "status": "投稿中",
+      "journal": "China Policy Journal",
+      "deadline": "",
+      "totalSeconds": 0,
+      "isRunning": false,
+      "sessionStart": null,
+      "createdAt": "2026-06-29T00:00:00.000Z"
+    }
+  ],
+  "reviews": [],
+  "sessions": []
+}
