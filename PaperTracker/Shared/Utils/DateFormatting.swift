@@ -15,11 +15,6 @@ enum DateFormatting {
         return f
     }()
 
-    static func displayDate(_ date: Date?) -> String {
-        guard let date else { return "" }
-        return displayFormatter.string(from: date)
-    }
-
     /// Relative deadline description: "3 days left", "Overdue 2 days"
     static func deadlineLabel(_ date: Date?) -> String {
         guard let date else { return "" }

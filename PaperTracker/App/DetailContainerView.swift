@@ -15,9 +15,9 @@ struct DetailContainerView: View {
                     papers: papersForSelection
                 )
             case .reviews:
-                PlaceholderView(title: "Reviews")
+                ReviewPageView(dataStore: dataStore)
             case .sessions:
-                PlaceholderView(title: "Sessions")
+                SessionPageView(dataStore: dataStore)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -35,23 +35,6 @@ struct DetailContainerView: View {
             return papers.filter { $0.status == .accepted || $0.status == .published }
         default: return []
         }
-    }
-}
-
-// MARK: - Generic placeholder for unimplemented pages
-
-private struct PlaceholderView: View {
-    let title: String
-
-    var body: some View {
-        VStack {
-            Text(title)
-                .font(AppTypography.pageTitle)
-            Text("Coming in Phase 4")
-                .font(AppTypography.bodySecondary)
-                .foregroundColor(AppColors.textTertiary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
