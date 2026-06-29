@@ -25,6 +25,9 @@ struct AIAssistSheet: View {
                 Text("AI Assist")
                     .font(AppTypography.windowTitle)
                 Spacer()
+                Button("Close") { dismiss() }
+                    .font(AppTypography.buttonLabel)
+                    .keyboardShortcut(.escape, modifiers: [])
             }
             .padding(.horizontal, AppSpacing.sheetPadding)
             .padding(.vertical, AppSpacing.space8)
