@@ -6,6 +6,7 @@ struct PaperEditorSheet: View {
 
     @ObservedObject var dataStore: DataStore
     let existingPaper: Paper?
+    let aiPrefill: AISuggestion?
 
     // MARK: - Form state
 
@@ -32,15 +33,43 @@ struct PaperEditorSheet: View {
             || note != paper.note
     }
 
-    init(dataStore: DataStore, existingPaper: Paper? = nil) {
+    init(dataStore: DataStore, existingPaper: Paper? = nil, aiPrefill: AISuggestion? = nil) {
         self.dataStore = dataStore
         self.existingPaper = existingPaper
-        _title = State(initialValue: existingPaper?.title ?? "")
-        _journal = State(initialValue: existingPaper?.journal ?? "")
-        _status = State(initialValue: existingPaper?.status ?? .writing)
-        _deadline = State(initialValue: existingPaper?.deadline)
-        _note = State(initialValue: existingPaper?.note ?? "")
-        _hasDeadline = State(initialValue: existingPaper?.deadline != nil)
+        self.aiPrefill = aiPrefill
+
+        let baseTitle = existingPaper?.title ?? aiPrefill?.title ?? ""
+        let baseJournal = existingPaper?.journal ?? aiPrefill?.journal ?? ""
+        let baseNote = existingPaper?.note ?? aiPrefill?.note ?? ""
+        let baseStatus: PaperStatus = {
+            if let s = existingPaper?.status { return s }
+            if let raw = aiPrefill?.status {
+                switch raw {
+                case "Submitted": return .submitted
+                case "R&R": return .rnr
+                case "Accepted": return .accepted
+                case "Published": return .published
+                default: return .writing
+                }
+            }
+            return .writing
+        }()
+        let baseDeadline: Date? = {
+            if let d = existingPaper?.deadline { return d }
+            if let raw = aiPrefill?.deadline, !raw.isEmpty {
+                let f = ISO8601DateFormatter()
+                f.formatOptions = [.withFullDate]
+                return f.date(from: raw) ?? DateFormatting.displayFormatter.date(from: raw)
+            }
+            return nil
+        }()
+
+        _title = State(initialValue: baseTitle)
+        _journal = State(initialValue: baseJournal)
+        _status = State(initialValue: baseStatus)
+        _deadline = State(initialValue: baseDeadline)
+        _note = State(initialValue: baseNote)
+        _hasDeadline = State(initialValue: baseDeadline != nil)
     }
 
     var body: some View {

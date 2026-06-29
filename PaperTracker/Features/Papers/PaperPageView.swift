@@ -11,7 +11,9 @@ struct PaperPageView: View {
     @State private var searchText = ""
     @State private var selectedFilter: PaperStatus?
     @State private var showEditor = false
+    @State private var showAIAssist = false
     @State private var editingPaper: Paper?
+    @State private var aiSuggestion: AISuggestion?
 
     private var hasActiveTimer: Bool { papers.contains(where: \.isRunning) }
 
@@ -32,7 +34,9 @@ struct PaperPageView: View {
                     }
                 },
                 actions: {
-                    SecondaryButton(title: "AI Assist", action: { /* Phase 6 */ })
+                    SecondaryButton(title: "AI Assist") {
+                        showAIAssist = true
+                    }
                     PrimaryButton(title: "+ New Paper", action: { openNew() })
                 }
             )
@@ -49,7 +53,19 @@ struct PaperPageView: View {
             )
         }
         .sheet(isPresented: $showEditor) {
-            PaperEditorSheet(dataStore: dataStore, existingPaper: editingPaper)
+            PaperEditorSheet(
+                dataStore: dataStore,
+                existingPaper: editingPaper,
+                aiPrefill: aiSuggestion
+            )
+        }
+        .sheet(isPresented: $showAIAssist) {
+            AIAssistSheet { suggestion in
+                aiSuggestion = suggestion
+                showAIAssist = false
+                editingPaper = nil
+                showEditor = true
+            }
         }
     }
 
