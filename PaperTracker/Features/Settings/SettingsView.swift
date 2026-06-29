@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
     @ObservedObject var dataStore: DataStore
     @StateObject private var backupService: BackupService
 
@@ -20,6 +21,15 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
+            // Close button
+            HStack {
+                Spacer()
+                Button("Close") { dismiss() }
+                    .font(AppTypography.buttonLabel)
+                    .keyboardShortcut(.escape, modifiers: [])
+            }
+            .padding(.bottom, AppSpacing.space4)
+
             VStack(alignment: .leading, spacing: AppSpacing.formSectionGap) {
                 dataSection
                 Divider()
