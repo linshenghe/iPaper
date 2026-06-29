@@ -21,16 +21,4 @@ enum AppTypography {
     // MARK: - Monospace
     static let timerText = Font.system(.subheadline, design: .monospaced).weight(.medium)
     static let numericMeta = Font.system(.caption2, design: .monospaced)
-
-    // MARK: - Point sizes (for custom uses)
-    static let windowTitleSize: CGFloat = 18
-    static let pageTitleSize: CGFloat = 16
-    static let sectionTitleSize: CGFloat = 13
-    static let bodyPrimarySize: CGFloat = 13
-    static let bodySecondarySize: CGFloat = 12
-    static let bodyTertiarySize: CGFloat = 11
-    static let buttonLabelSize: CGFloat = 13
-    static let chipLabelSize: CGFloat = 12
-    static let fieldLabelSize: CGFloat = 11
-    static let timerTextSize: CGFloat = 13
 }

@@ -9,7 +9,6 @@ enum AppRadius {
     static let pill: CGFloat = 999
 
     // Semantic aliases
-    static let sheetCorner = sheet
     static let buttonCorner = control
     static let searchFieldCorner = control
     static let filterChipCorner = chip
