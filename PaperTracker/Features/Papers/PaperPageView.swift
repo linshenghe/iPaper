@@ -1,20 +1,22 @@
 import SwiftUI
 
 /// Papers main page: toolbar + secondary status + list.
-/// Holds page-level UI state (search, filter, selection).
 struct PaperPageView: View {
     @ObservedObject var dataStore: DataStore
+    @EnvironmentObject private var timerController: PaperTimerController
+
     let title: String
     let papers: [Paper]
 
     @State private var searchText = ""
     @State private var selectedFilter: PaperStatus?
+    @State private var showEditor = false
+    @State private var editingPaper: Paper?
 
     private var hasActiveTimer: Bool { papers.contains(where: \.isRunning) }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Toolbar
             AppToolbar(
                 title: title,
                 searchText: $searchText,
@@ -24,32 +26,56 @@ struct PaperPageView: View {
                             label: status.rawValue,
                             isSelected: selectedFilter == status,
                             action: {
-                                if selectedFilter == status {
-                                    selectedFilter = nil
-                                } else {
-                                    selectedFilter = status
-                                }
+                                selectedFilter = (selectedFilter == status) ? nil : status
                             }
                         )
                     }
                 },
                 actions: {
                     SecondaryButton(title: "AI Assist", action: { /* Phase 6 */ })
-                    PrimaryButton(title: "+ New Paper", action: { /* Phase 3 */ })
+                    PrimaryButton(title: "+ New Paper", action: { openNew() })
                 }
             )
 
-            // Secondary status strip
             secondaryStatus
 
-            // List
             PaperListView(
                 dataStore: dataStore,
                 searchText: $searchText,
                 selectedFilter: $selectedFilter,
-                papers: papers
+                papers: papers,
+                onEdit: openEdit,
+                onStartStop: toggleTimer
             )
         }
+        .sheet(isPresented: $showEditor) {
+            PaperEditorSheet(dataStore: dataStore, existingPaper: editingPaper)
+        }
+    }
+
+    // MARK: - Actions
+
+    private func openNew() {
+        editingPaper = nil
+        showEditor = true
+    }
+
+    private func openEdit(_ paper: Paper?) {
+        guard let paper else {
+            openNew()
+            return
+        }
+        editingPaper = paper
+        showEditor = true
+    }
+
+    private func toggleTimer(_ paper: Paper) {
+        if paper.isRunning {
+            timerController.stop(paperID: paper.id)
+        } else {
+            timerController.start(paperID: paper.id)
+        }
+        try? dataStore.save()
     }
 
     // MARK: - Secondary status
@@ -94,8 +120,6 @@ struct PaperPageView: View {
         }
     }
 
-    // MARK: - Helpers
-
     private var filteredPapers: [Paper] {
         var result = papers
         if let filter = selectedFilter {
@@ -120,6 +144,7 @@ struct PaperPageView: View {
                 title: "All Papers",
                 papers: []
             )
+            .environmentObject(env.timerController)
             .frame(width: 800, height: 500)
         }
     }

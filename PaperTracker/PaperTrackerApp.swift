@@ -16,6 +16,7 @@ struct PaperTrackerApp: App {
             RootContentView()
                 .environmentObject(environment)
                 .environmentObject(environment.dataStore)
+                .environmentObject(environment.timerController)
         }
     }
 }
