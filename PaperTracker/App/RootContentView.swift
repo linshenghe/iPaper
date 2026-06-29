@@ -4,6 +4,7 @@ struct RootContentView: View {
     @EnvironmentObject private var dataStore: DataStore
     @EnvironmentObject private var timerController: PaperTimerController
     @State private var sidebarSelection: SidebarNavigation = .allPapers
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -12,7 +13,8 @@ struct RootContentView: View {
             NavigationSplitView {
                 SidebarView(
                     selection: $sidebarSelection,
-                    dataStore: dataStore
+                    dataStore: dataStore,
+                    onSettings: { showSettings = true }
                 )
                 .navigationSplitViewColumnWidth(min: 200, ideal: 220)
             } detail: {
@@ -32,10 +34,14 @@ struct RootContentView: View {
         .onAppear {
             timerController.recoverIfNeeded()
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(dataStore: dataStore)
+        }
     }
 }
 
 #Preview {
     RootContentView()
         .environmentObject(AppEnvironment.bootstrap().dataStore)
+        .environmentObject(AppEnvironment.bootstrap().timerController)
 }

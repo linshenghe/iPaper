@@ -27,6 +27,7 @@ enum SidebarNavigation: String, CaseIterable {
 struct SidebarView: View {
     @Binding var selection: SidebarNavigation
     @ObservedObject var dataStore: DataStore
+    var onSettings: (() -> Void)?
 
     // pony-tail: counts computed inline; could be cached if data grows large
     private func count(for nav: SidebarNavigation) -> Int {
@@ -73,9 +74,10 @@ struct SidebarView: View {
 
             // Bottom status
             SidebarStatus(
-                lastSavedAt: nil, // ponytail: wired in Phase 3
-                hasActiveTimer: false, // ponytail: wired in Phase 3
-                aiConnected: false // ponytail: wired in Phase 6
+                lastSavedAt: nil,
+                hasActiveTimer: false,
+                aiConnected: false,
+                onSettings: onSettings
             )
         }
         .background(AppColors.sidebarBg)
@@ -127,6 +129,7 @@ private struct SidebarStatus: View {
     let lastSavedAt: Date?
     let hasActiveTimer: Bool
     let aiConnected: Bool
+    var onSettings: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.space2) {
@@ -148,6 +151,16 @@ private struct SidebarStatus: View {
                     .font(AppTypography.metaLabel)
                     .foregroundColor(AppColors.textTertiary)
             }
+            Button(action: { onSettings?() }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 9))
+                    Text("Settings")
+                        .font(AppTypography.metaLabel)
+                }
+                .foregroundColor(AppColors.textTertiary)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, AppSpacing.sidebarPadding)
         .padding(.vertical, AppSpacing.space5)
