@@ -1,14 +1,13 @@
 import SwiftUI
 
-/// Paper list: renders rows, handles empty/search/filter states, selection.
 struct PaperListView: View {
     @ObservedObject var dataStore: DataStore
     @Binding var searchText: String
     @Binding var selectedFilter: PaperStatus?
 
     let papers: [Paper]
-
-    // MARK: - Filtered data
+    var onEdit: ((Paper?) -> Void)?         // nil = new paper
+    var onStartStop: ((Paper) -> Void)?
 
     private var filteredPapers: [Paper] {
         var result = papers
@@ -36,7 +35,7 @@ struct PaperListView: View {
                 title: "Start with your first paper",
                 subtitle: "这里是论文管理器，追踪你的研究写作进度。",
                 buttonTitle: "New Paper",
-                buttonAction: { /* ponytail: wired in Phase 3 */ }
+                buttonAction: { onEdit?(nil) }
             )
         } else if isSearchEmpty {
             EmptyStateView(
@@ -54,33 +53,17 @@ struct PaperListView: View {
             )
         } else {
             List(filteredPapers) { paper in
-                PaperRowView(paper: paper)
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-                    .contentShape(Rectangle())
+                PaperRowView(
+                    paper: paper,
+                    onEdit: { onEdit?(paper) },
+                    onStartStop: { onStartStop?(paper) }
+                )
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .contentShape(Rectangle())
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
         }
     }
-}
-
-#Preview {
-    @Previewable @State var searchText = ""
-    @Previewable @State var filter: PaperStatus?
-    let env = AppEnvironment.bootstrap()
-
-    return PaperListView(
-        dataStore: env.dataStore,
-        searchText: $searchText,
-        selectedFilter: $filter,
-        papers: [
-            Paper(
-                id: "p1", title: "中国引文偏见", status: .writing,
-                journal: "CPJ", deadline: nil, totalSeconds: 120,
-                isRunning: true, sessionStart: Date(),
-                createdAt: Date(), updatedAt: Date(), note: ""
-            )
-        ]
-    )
 }

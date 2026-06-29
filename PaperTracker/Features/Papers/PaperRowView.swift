@@ -2,8 +2,16 @@ import SwiftUI
 
 /// Single paper row — the core visual unit of the list.
 struct PaperRowView: View {
+    @EnvironmentObject private var timerController: PaperTimerController
+
     let paper: Paper
-    var isRunning: Bool { paper.isRunning }
+    var onEdit: (() -> Void)?
+    var onStartStop: (() -> Void)?
+
+    private var isRunning: Bool { paper.isRunning }
+    private var displayedTime: Int {
+        timerController.displayedSeconds(for: paper, now: timerController.tick)
+    }
 
     var body: some View {
         HStack(spacing: AppSpacing.space5) {
@@ -50,13 +58,13 @@ struct PaperRowView: View {
 
             // Right: timer + actions
             VStack(alignment: .trailing, spacing: AppSpacing.space2) {
-                Text(DateFormatting.formatTimer(paper.totalSeconds))
+                Text(DateFormatting.formatTimer(displayedTime))
                     .font(AppTypography.timerText)
                     .foregroundColor(isRunning ? AppColors.accentPrimary : AppColors.textSecondary)
 
                 HStack(spacing: AppSpacing.space3) {
                     Button(isRunning ? "Stop" : "Start") {
-                        // ponytail: wired in Phase 3
+                        onStartStop?()
                     }
                     .font(AppTypography.bodyTertiary)
                     .foregroundColor(isRunning ? AppColors.danger : AppColors.accentPrimary)
@@ -67,10 +75,9 @@ struct PaperRowView: View {
                     )
 
                     Menu {
-                        Button("Edit") {}
-                        Button("Quick Note") {}
+                        Button("Edit") { onEdit?() }
                         Divider()
-                        Button("Delete", role: .destructive) {}
+                        Button("Delete", role: .destructive) { /* wired via editor sheet */ }
                     } label: {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 11))
@@ -86,8 +93,6 @@ struct PaperRowView: View {
         .frame(minHeight: AppMetrics.paperRowMinHeight)
         .background(rowBackground)
     }
-
-    // MARK: - Helpers
 
     private var rowBackground: some View {
         Group {
@@ -106,8 +111,6 @@ struct PaperRowView: View {
     }
 }
 
-// MARK: - Hover highlight support (ponytail: via .listRowBackground in Phase 3)
-
 #Preview {
     let paper = Paper(
         id: "preview",
@@ -123,7 +126,7 @@ struct PaperRowView: View {
         note: ""
     )
 
-    return List {
+    List {
         PaperRowView(paper: paper)
         PaperRowView(paper: Paper(
             id: "p2",
