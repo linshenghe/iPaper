@@ -202,7 +202,7 @@ enum DataMigration {
         return MigrationResult(data: appData, warnings: warnings)
     }
 
-    private static func parseISO(_ string: String?) -> Date? {
+    private nonisolated static func parseISO(_ string: String?) -> Date? {
         guard let str = string, !str.isEmpty else { return nil }
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
