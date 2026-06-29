@@ -1,13 +1,7 @@
 import Foundation
 import Security
 
-protocol KeychainServiceProtocol {
-    func saveAPIKey(_ value: String) throws
-    func loadAPIKey() throws -> String?
-    func deleteAPIKey() throws
-}
-
-final class KeychainService: KeychainServiceProtocol {
+final class KeychainService {
     private let service = "com.linshenghe.papertracker"
     private let account = "api_key"
 
